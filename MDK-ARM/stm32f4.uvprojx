@@ -400,6 +400,11 @@
               <FilePath>..\Core\Src\tmotor_ak_actuators.c</FilePath>
             </File>
             <File>
+              <FileName>ADXL.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\ADXL.c</FilePath>
+            </File>
+            <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Core/Src/main.c</FilePath>

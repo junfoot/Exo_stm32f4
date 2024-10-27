@@ -37,6 +37,9 @@
 
 extern osSemaphoreId_t sem1Handle;
 
+extern float adxl01_data[3];
+extern float adxl02_data[3];
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -198,17 +201,18 @@ void TIM1_UP_TIM10_IRQHandler(void)
 void TIM2_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM2_IRQn 0 */
-
+	
+    if(__HAL_TIM_GET_FLAG(&htim2, TIM_FLAG_UPDATE) != RESET)
+    {	
+        osSemaphoreRelease(sem1Handle);
+//				printf("666\r\n");
+    }
+    __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_UPDATE);
+	
   /* USER CODE END TIM2_IRQn 0 */
   HAL_TIM_IRQHandler(&htim2);
   /* USER CODE BEGIN TIM2_IRQn 1 */
 
-    if(__HAL_TIM_GET_FLAG(&htim2, TIM_FLAG_UPDATE) != RESET)
-    {	
-        osSemaphoreRelease(sem1Handle);
-    }
-    __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_UPDATE);
-    
   /* USER CODE END TIM2_IRQn 1 */
 }
 

@@ -105,7 +105,8 @@ int main(void)
   MX_TIM2_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-	
+
+	HAL_TIM_Base_Start_IT(&htim2);
 	printf("start\r\n");
 
   /* USER CODE END 2 */
@@ -198,7 +199,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-
+	
   /* USER CODE END Callback 1 */
 }
 

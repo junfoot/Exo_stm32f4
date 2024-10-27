@@ -30,6 +30,7 @@
 #include "tmotor_ak_actuators.h"
 #include "can.h"
 #include <stdio.h>
+#include "ADXL.h"
 
 /* USER CODE END Includes */
 
@@ -51,6 +52,15 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
 
+float adxl01_data[3];
+float adxl02_data[3];
+
+uint8_t adxl_select = 0;
+
+extern float GAINX;
+extern float GAINY;
+extern float GAINZ;
+
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -59,19 +69,26 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for MotorControl */
-osThreadId_t MotorControlHandle;
-const osThreadAttr_t MotorControl_attributes = {
-  .name = "MotorControl",
+/* Definitions for myTask01 */
+osThreadId_t myTask01Handle;
+const osThreadAttr_t myTask01_attributes = {
+  .name = "myTask01",
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityRealtime,
 };
-/* Definitions for PCcom */
-osThreadId_t PCcomHandle;
-const osThreadAttr_t PCcom_attributes = {
-  .name = "PCcom",
+/* Definitions for myTask02 */
+osThreadId_t myTask02Handle;
+const osThreadAttr_t myTask02_attributes = {
+  .name = "myTask02",
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityHigh,
+};
+/* Definitions for myTask03 */
+osThreadId_t myTask03Handle;
+const osThreadAttr_t myTask03_attributes = {
+  .name = "myTask03",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityHigh1,
 };
 /* Definitions for sem1 */
 osSemaphoreId_t sem1Handle;
@@ -85,8 +102,9 @@ const osSemaphoreAttr_t sem1_attributes = {
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
-void StartMotorControl(void *argument);
-void StartPCcom(void *argument);
+void StartTask01(void *argument);
+void StartTask02(void *argument);
+void StartTask03(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -124,11 +142,14 @@ void MX_FREERTOS_Init(void) {
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-  /* creation of MotorControl */
-  MotorControlHandle = osThreadNew(StartMotorControl, NULL, &MotorControl_attributes);
+  /* creation of myTask01 */
+  myTask01Handle = osThreadNew(StartTask01, NULL, &myTask01_attributes);
 
-  /* creation of PCcom */
-  PCcomHandle = osThreadNew(StartPCcom, NULL, &PCcom_attributes);
+  /* creation of myTask02 */
+  myTask02Handle = osThreadNew(StartTask02, NULL, &myTask02_attributes);
+
+  /* creation of myTask03 */
+  myTask03Handle = osThreadNew(StartTask03, NULL, &myTask03_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -158,35 +179,37 @@ void StartDefaultTask(void *argument)
   /* USER CODE END StartDefaultTask */
 }
 
-/* USER CODE BEGIN Header_StartMotorControl */
+/* USER CODE BEGIN Header_StartTask01 */
 /**
-* @brief Function implementing the MotorControl thread.
+* @brief Function implementing the myTask01 thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartMotorControl */
-void StartMotorControl(void *argument)
+/* USER CODE END Header_StartTask01 */
+void StartTask01(void *argument)
 {
-  /* USER CODE BEGIN StartMotorControl */
-    
-    // 初始化电机参数
-    MotorParameters motorParams = {
-        .positionMin = -12.5f,
-        .positionMax = 12.5f,
-        .velocityMin = -50.0f,
-        .velocityMax = 50.0f,
-        .torqueMin = -65.0f,
-        .torqueMax = 65.0f,
-        .kpMin = 0.0f,
-        .kpMax = 500.0f,
-        .kdMin = 0.0f,
-        .kdMax = 5.0f,
-    };
+  /* USER CODE BEGIN StartTask01 */
+	
+	// motor control
+	
+	// 初始化电机参数
+	MotorParameters motorParams = {
+			.positionMin = -12.5f,
+			.positionMax = 12.5f,
+			.velocityMin = -50.0f,
+			.velocityMax = 50.0f,
+			.torqueMin = -65.0f,
+			.torqueMax = 65.0f,
+			.kpMin = 0.0f,
+			.kpMax = 500.0f,
+			.kdMin = 0.0f,
+			.kdMax = 5.0f,
+	};
 
-    // 初始化一个电机对象
-    AkActuators motor1, motor2;
-    AkActuators_init(&motor1, 1, motorParams, can_send_msg);
-    AkActuators_init(&motor2, 2, motorParams, can_send_msg);
+	// 初始化一个电机对象
+	AkActuators motor1, motor2;
+	AkActuators_init(&motor1, 1, motorParams, can_send_msg);
+	AkActuators_init(&motor2, 2, motorParams, can_send_msg);
 
 //    // 启动电机
 //    AkActuators_enable(&motor1);
@@ -205,39 +228,128 @@ void StartMotorControl(void *argument)
 
 //    // 关闭电机
 //    AkActuators_disable(&motor1);
-    
-    
+	
   /* Infinite loop */
   for(;;)
   {
-      
-//      osSemaphoreAcquire(sem1Handle, osWaitForever);
 		
-			printf("111\r\n");
+		HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_9);
 		
-			HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_9);
-      
-      osDelay(500);
+    osDelay(1000);
   }
-  /* USER CODE END StartMotorControl */
+  /* USER CODE END StartTask01 */
 }
 
-/* USER CODE BEGIN Header_StartPCcom */
+/* USER CODE BEGIN Header_StartTask02 */
 /**
-* @brief Function implementing the PCcom thread.
+* @brief Function implementing the myTask02 thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartPCcom */
-void StartPCcom(void *argument)
+/* USER CODE END Header_StartTask02 */
+void StartTask02(void *argument)
 {
-  /* USER CODE BEGIN StartPCcom */
+  /* USER CODE BEGIN StartTask02 */
+	
+	// serial port communication
+	
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1000);
+		
+		osSemaphoreAcquire(sem1Handle, osWaitForever);
+		
+		printf("%f,%f,%f,%f,%f,%f\r\n", adxl01_data[0], adxl01_data[1], adxl01_data[2]
+															,adxl02_data[0], adxl02_data[1], adxl02_data[2]);
+		
+//    osDelay(1000);
   }
-  /* USER CODE END StartPCcom */
+  /* USER CODE END StartTask02 */
+}
+
+/* USER CODE BEGIN Header_StartTask03 */
+/**
+* @brief Function implementing the myTask03 thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartTask03 */
+void StartTask03(void *argument)
+{
+  /* USER CODE BEGIN StartTask03 */
+	
+	// -------------------  spi communication  ------------------
+ 	// spi init
+	
+	ADXL_InitTypeDef adxl01 = {
+		SPIMODE_4WIRE,
+		INT_ACTIVEHIGH,
+		LPMODE_NORMAL,
+		BWRATE_3200,
+		RANGE_16G,
+		RESOLUTION_FULL,
+		JUSTIFY_SIGNED,
+		AUTOSLEEPOFF,
+		LINKMODEOFF
+	};
+	
+	adxlStatus adxlres;
+	
+	adxl_select = 0;
+	adxlres = ADXL_Init(&adxl01);
+	printf("adxl01_state: %d\r\n", adxlres);
+	ADXL_Measure(ON);
+	
+	adxl_select = 1;
+	adxlres = ADXL_Init(&adxl01);
+	printf("adxl02_state: %d\r\n", adxlres);
+	ADXL_Measure(ON);
+	
+  /* Infinite loop */
+  for(;;)
+  {
+//		uint8_t data[6]={0,0,0,0,0,0};
+//		uint8_t address = DATA0;
+//		address |= 0x40;
+//    address |= (0x80);	
+//		
+//		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_RESET);
+////		HAL_SPI_Transmit(&SPIhandler,&address, 1, HAL_MAX_DELAY);
+////		HAL_SPI_Receive(&SPIhandler, data, sizeof(data), HAL_MAX_DELAY);
+//		HAL_SPI_TransmitReceive(&SPIhandler, &address, data, sizeof(data), HAL_MAX_DELAY);
+//		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_SET);
+
+//		adxl01_data[0] = (float)(data[1]<<8 | data[0])*GAINX;
+////		adxl01_data[0] = ( (int16_t) ((data[1]*256+data[0])))*GAINX;
+//		adxl01_data[1] = ( (int16_t) ((data[3]*256+data[2])))*GAINY;
+//		adxl01_data[2] = ( (int16_t) ((data[5]*256+data[4])))*GAINZ;
+		
+		// =============================================================
+		
+//		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_1, GPIO_PIN_RESET);
+//		HAL_SPI_TransmitReceive(&SPIhandler, &address, data, sizeof(data), HAL_MAX_DELAY);
+//		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_1, GPIO_PIN_SET);
+//		
+//		float * fdata2 = adxl02_data;
+//		fdata2[0] = ( (int16_t) ((data[1]*256+data[0])))*GAINX;
+//		fdata2[1] = ( (int16_t) ((data[3]*256+data[2])))*GAINY;
+//		fdata2[2] = ( (int16_t) ((data[5]*256+data[4])))*GAINZ;
+
+		adxl_select = 0;
+		ADXL_getAccel(adxl01_data, OUTPUT_FLOAT);
+		
+		osDelay(1);
+		
+		adxl_select = 1;
+		ADXL_getAccel(adxl02_data, OUTPUT_FLOAT);
+
+//		printf("%f\r\n", GAINX);
+//		printf("%f,%f,%f,%f,%f,%f\r\n", adxl01_data[0], adxl01_data[1], adxl01_data[2]
+//																	,adxl02_data[0], adxl02_data[1], adxl02_data[2]);
+		
+    osDelay(1);
+  }
+  /* USER CODE END StartTask03 */
 }
 
 /* Private application code --------------------------------------------------*/
